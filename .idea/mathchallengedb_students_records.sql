@@ -25,7 +25,7 @@ DROP TABLE IF EXISTS `students_records`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `students_records` (
-  `Student_ID` int NOT NULL AUTO_INCREMENT,
+  `Student_ID` int NOT NULL AUTO_INCREMENT, 
   `Student_Name` varchar(30) NOT NULL,
   `Grade_Level` int NOT NULL,
   PRIMARY KEY (`Student_ID`),
