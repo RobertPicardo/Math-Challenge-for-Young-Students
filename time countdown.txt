@@ -1,0 +1,72 @@
+package com.example.quickrecallgame;
+
+import javafx.animation.Animation;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
+import javafx.application.Application;
+import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
+import javafx.scene.Scene;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Label;
+import javafx.scene.layout.StackPane;
+import javafx.stage.Stage;
+import javafx.util.Duration;
+import javafx.application.Platform; // Import Platform
+
+public class GameMaxTimer extends Application {
+
+    private static final int MAX_SECONDS = 10; // Set the maximum number of seconds
+
+    private int seconds;
+    private Timeline timeline;
+    private Label timerLabel;
+
+    @Override
+    public void start(Stage primaryStage) {
+        seconds = MAX_SECONDS; // Initialize seconds to the maximum value
+        timerLabel = new Label("Time: " + seconds + " seconds");
+
+        timeline = new Timeline(new KeyFrame(Duration.seconds(1), new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent event) {
+                seconds--; // Decrement the remaining time
+                timerLabel.setText("Time: " + seconds + " seconds");
+
+                if (seconds <= 0) {
+                    // Stop the timer when it reaches 0 seconds
+                    timeline.stop();
+                    // Show a message when the countdown timer is done
+                    showTimeOutMessage();
+                }
+            }
+        }));
+        timeline.setCycleCount(Animation.INDEFINITE);
+
+        StackPane root = new StackPane();
+        root.getChildren().add(timerLabel);
+
+        Scene scene = new Scene(root, 300, 50);
+
+        primaryStage.setTitle("Countdown Timer");
+        primaryStage.setScene(scene);
+        primaryStage.show();
+
+        timeline.play();
+    }
+
+    private void showTimeOutMessage() {
+        Platform.runLater(() -> { // Run the alert on the JavaFX Application Thread
+            Alert alert = new Alert(Alert.AlertType.INFORMATION);
+            alert.setTitle("Time's Up");
+            alert.setHeaderText(null);
+            alert.setContentText("Time is out");
+            alert.showAndWait();
+            // You can perform additional actions here when the countdown timer is done.
+        });
+    }
+
+    public static void main(String[] args) {
+        launch(args);
+    }
+}
