@@ -1,3 +1,4 @@
+// this code will indicate the correct and the wrong answer that's where entered by the user//
 package Maze;
 
 import javafx.application.Application;
