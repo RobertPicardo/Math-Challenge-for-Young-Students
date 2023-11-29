@@ -1,0 +1,436 @@
+package com.example;
+import javafx.application.Application;
+import javafx.stage.Stage;
+import javafx.scene.Scene;
+import javafx.scene.layout.VBox;
+import javafx.scene.control.*;
+import javafx.scene.control.Alert.AlertType;
+import javafx.geometry.Pos;
+import java.sql.Statement;
+import java.util.Optional;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+
+
+
+public class Main extends Application {
+
+    private Stage mainStage;
+    private Stage gameSelectionStage;
+    private TextField usernameField;
+    private PasswordField passwordField;
+    private TextField gradeField;
+
+    // Database connection information
+    private static final String dbUrl = "jdbc:mysql://localhost:3306/test";
+    private static final String dbUser = "root";
+    private static final String dbPassword = "Lacrosse-1234";
+
+
+    public static void main(String[] args) {
+
+
+         try {
+           Class.forName("com.mysql.cj.jdbc.Driver");
+         } catch (ClassNotFoundException e) {
+            System.err.println("MySQL JDBC driver not found");
+            System.exit(1);
+        }
+        
+        launch(args);
+    }
+    
+
+    @Override
+    public void start(Stage stage) {
+        mainStage = stage;
+        mainStage.setTitle("Math Challenge");
+
+        createWelcomeScreen();
+        mainStage.show();
+    }
+
+    private void showLoginScreen() {
+        Stage loginStage = new Stage();
+        loginStage.setTitle("Login");
+    
+        VBox loginLayout = new VBox();
+        loginLayout.setAlignment(Pos.CENTER);
+        loginLayout.setSpacing(10);
+    
+        usernameField = createStyledTextField("Username");
+        passwordField = createStyledPasswordField("Password");
+    
+        Button loginButton = createStyledButton("Login");
+    
+        loginLayout.getChildren().addAll(usernameField, passwordField, loginButton, createExitButton(loginStage));
+    
+        loginButton.setOnAction(e -> authenticateUser());
+    
+        Scene loginScene = new Scene(loginLayout, 400, 300);
+        loginStage.setScene(loginScene);
+        loginStage.show();
+    }
+    
+    private void createWelcomeScreen() {
+        VBox welcomeLayout = new VBox();
+        welcomeLayout.setAlignment(Pos.CENTER);
+        welcomeLayout.setSpacing(20);
+
+        Label welcomeLabel = new Label("Welcome to Math Challenge!");
+        welcomeLabel.setStyle("-fx-font-size: 24px; -fx-font-weight: bold;");
+
+        Button loginButton = createStyledButton("Login");
+        Button registerButton = createStyledButton("Register");
+
+        welcomeLayout.getChildren().addAll(welcomeLabel, loginButton, registerButton, createExitButton(mainStage));
+
+        loginButton.setOnAction(e -> showLoginScreen());
+        registerButton.setOnAction(e -> showRoleSelectionScreen());
+
+        Scene welcomeScene = new Scene(welcomeLayout, 400, 300);
+        mainStage.setScene(welcomeScene);
+    }
+
+    private void showRoleSelectionScreen() {
+        Stage roleSelectionStage = new Stage();
+        roleSelectionStage.setTitle("Select Role");
+
+        VBox roleLayout = new VBox();
+        roleLayout.setAlignment(Pos.CENTER);
+        roleLayout.setSpacing(20);
+
+        Label roleLabel = new Label("Select your role:");
+
+        Button studentButton = createStyledButton("Student");
+        Button teacherButton = createStyledButton("Teacher");
+
+        roleLayout.getChildren().addAll(roleLabel, studentButton, teacherButton, createExitButton(roleSelectionStage));
+
+        studentButton.setOnAction(e -> showRegistrationScreen("Student", roleSelectionStage));
+        teacherButton.setOnAction(e -> showRegistrationScreen("Teacher", roleSelectionStage));
+
+        Scene roleScene = new Scene(roleLayout, 400, 300);
+        roleSelectionStage.setScene(roleScene);
+        roleSelectionStage.show();
+    }
+
+    private void showRegistrationScreen(String role, Stage previousStage) {
+        Stage registrationStage = new Stage();
+        registrationStage.setTitle("Register as " + role);
+    
+        VBox registrationLayout = new VBox();
+        registrationLayout.setAlignment(Pos.CENTER);
+        registrationLayout.setSpacing(10);
+    
+        usernameField = createStyledTextField("Username");
+        passwordField = createStyledPasswordField("Password");
+    
+        if (role.equals("Student")) {
+            gradeField = createStyledTextField("Grade Level");
+            registrationLayout.getChildren().addAll(usernameField, passwordField, gradeField, createRegistrationButton(role, registrationStage));
+        } else if (role.equals("Teacher")) {
+            registrationLayout.getChildren().addAll(usernameField, passwordField, createRegistrationButton(role, registrationStage));
+        }
+    
+        registrationLayout.getChildren().addAll(createExitButton(registrationStage));
+    
+        Scene registrationScene = new Scene(registrationLayout, 400, 300);
+        registrationStage.setScene(registrationScene);
+        registrationStage.show();
+    
+        previousStage.close();
+    }
+
+       private Button createRegistrationButton(String role, Stage registrationStage) {
+        Button registerButton = createStyledButton("Register as " + role);
+        registerButton.setOnAction(e -> {
+            String username = usernameField.getText();
+            String password = passwordField.getText();
+            String grade = (role.equals("Student")) ? gradeField.getText() : null;
+
+           
+        if(role.equals(("Student")))
+        {
+
+
+             try (Connection connection = DriverManager.getConnection(dbUrl, dbUser, dbPassword)) {
+                String insertSQL = "INSERT INTO Students (username, password, grade) VALUES (?, ?, ?);";
+                try (PreparedStatement insertStatement = connection.prepareStatement(insertSQL)) {
+                    insertStatement.setString(1, username);
+                    insertStatement.setString(2, password);
+                    insertStatement.setString(3, grade);
+                    insertStatement.executeUpdate();
+                }
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+            }
+
+
+
+        } else {
+
+
+               try (Connection connection = DriverManager.getConnection(dbUrl, dbUser, dbPassword)) {
+                String insertSQL = "INSERT INTO Teachers (username, password) VALUES (?, ?);";
+                try (PreparedStatement insertStatement = connection.prepareStatement(insertSQL)) {
+                    insertStatement.setString(1, username);
+                    insertStatement.setString(2, password);
+                    insertStatement.executeUpdate();
+                }
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+            }
+            
+        }
+        
+
+
+            
+
+            registrationStage.close();
+            showGameSelectionScreen(role, mainStage);
+        });
+
+        return registerButton;
+    }
+
+
+    private Button createStyledButton(String text) {
+        Button button = new Button(text);
+        button.setPrefWidth(200);
+        button.setStyle("-fx-background-color: #4CAF50; -fx-text-fill: white;");
+        button.setOnMouseEntered(e -> button.setStyle("-fx-background-color: #45a049; -fx-text-fill: white;"));
+        button.setOnMouseExited(e -> button.setStyle("-fx-background-color: #4CAF50; -fx-text-fill: white;"));
+        return button;
+    }
+
+    private Button createExitButton(Stage stage) {
+        Button exitButton = createStyledButton("Exit");
+        exitButton.setOnAction(e -> {
+            createWelcomeScreen();
+            stage.close();
+        });
+        return exitButton;
+    }
+
+    private TextField createStyledTextField(String promptText) {
+        TextField textField = new TextField();
+        textField.setPromptText(promptText);
+        textField.setPrefWidth(200);
+        return textField;
+    }
+
+    private PasswordField createStyledPasswordField(String promptText) {
+        PasswordField passwordField = new PasswordField();
+        passwordField.setPromptText(promptText);
+        passwordField.setPrefWidth(200);
+        return passwordField;
+    }
+
+    private void showGameSelectionScreen(String role, Stage loginStage) {
+        gameSelectionStage = new Stage();
+        gameSelectionStage.setTitle("Game Selection");
+    
+        VBox gameLayout = new VBox();
+        gameLayout.setAlignment(Pos.CENTER);
+        gameLayout.setSpacing(20);
+    
+        Label welcomeLabel = new Label("Welcome, " + usernameField.getText() + "!");
+        welcomeLabel.setStyle("-fx-font-size: 18px; -fx-font-weight: bold;");
+    
+        Button viewReportsButton = createStyledButton("View Reports");
+        gameLayout.getChildren().add(welcomeLabel);
+    
+        if (role.equals("Student")) {
+            Button mazeButton = createStyledButton("Maze Game");
+            Button raceButton = createStyledButton("Race Game");
+            Button recallButton = createStyledButton("Quick Recall");
+            Button viewReportButton = createStyledButton("View Report");
+    
+            gameLayout.getChildren().addAll(mazeButton, raceButton, recallButton, viewReportButton);
+    
+            mazeButton.setOnAction(e -> System.out.println("Starting Maze Game"));
+            raceButton.setOnAction(e -> System.out.println("Starting Race Game"));
+            recallButton.setOnAction(e -> System.out.println("Starting Quick Recall"));
+            viewReportButton.setOnAction(e -> showStudentReportScreen());
+        } else if (role.equals("Teacher")) {
+            gameLayout.getChildren().add(viewReportsButton);
+    
+            viewReportsButton.setOnAction(e -> showReportsScreen());
+        }
+    
+        gameLayout.getChildren().add(createExitButton(gameSelectionStage));
+    
+        gameSelectionStage.setOnHidden(e -> {
+            loginStage.show();
+        });
+    
+        Scene gameScene = new Scene(gameLayout, 400, 300);
+        gameSelectionStage.setScene(gameScene);
+        gameSelectionStage.show();
+    }
+    
+    
+
+
+   private void authenticateUser() {
+    String role = promptForRole(); // Add this method to prompt the user for their role
+    String enteredUsername = usernameField.getText();
+    String enteredPassword = passwordField.getText();
+
+    try (Connection connection = DriverManager.getConnection(dbUrl, dbUser, dbPassword)) {
+        String query;
+        if ("Student".equals(role)) {
+            query = "SELECT * FROM Students WHERE username = ? AND password = ?";
+        } else if ("Teacher".equals(role)) {
+            query = "SELECT * FROM Teachers WHERE username = ? AND password = ?";
+        } else {
+            showAlert("Invalid Role", "Please select a valid role.");
+            return; // Exit the method if the role is not valid
+        }
+
+        try (PreparedStatement preparedStatement = connection.prepareStatement(query)) {
+            preparedStatement.setString(1, enteredUsername);
+            preparedStatement.setString(2, enteredPassword);
+
+            try (ResultSet resultSet = preparedStatement.executeQuery()) {
+                if (resultSet.next()) {
+                    // Authentication successful
+                    System.out.println("Login successful");
+                    showGameSelectionScreen(role, mainStage);
+                } else {
+                    // Authentication failed
+                    showAlert("Authentication Failed", "Incorrect username or password");
+                }
+            }
+        }
+    } catch (SQLException ex) {
+        ex.printStackTrace();
+        showAlert("Database Error", "An error occurred while connecting to the database");
+    }
+}
+
+private String promptForRole() {
+  
+    ComboBox<String> roleComboBox = new ComboBox<>();
+    roleComboBox.getItems().addAll("Student", "Teacher");
+    roleComboBox.setPromptText("Select Role");
+
+    // Create a dialog to prompt for the role
+    Dialog<String> roleDialog = new Dialog<>();
+    roleDialog.setTitle("Role Selection");
+    roleDialog.setHeaderText("Select your role:");
+
+    ButtonType loginButtonType = new ButtonType("Login", ButtonBar.ButtonData.OK_DONE);
+    roleDialog.getDialogPane().getButtonTypes().addAll(loginButtonType, ButtonType.CANCEL);
+
+    roleDialog.getDialogPane().setContent(roleComboBox);
+
+    roleDialog.setResultConverter(dialogButton -> {
+        if (dialogButton == loginButtonType) {
+            return roleComboBox.getValue();
+        }
+        return null;
+    });
+
+    Optional<String> result = roleDialog.showAndWait();
+    return result.orElse(null);
+}
+
+
+private void showAlert(String title, String content) {
+    Alert alert = new Alert(AlertType.ERROR);
+    alert.setTitle(title);
+    alert.setHeaderText(null);
+    alert.setContentText(content);
+    alert.showAndWait();
+}
+
+    
+private void showReportsScreen() {
+    
+
+    Stage reportsStage = new Stage();
+    reportsStage.setTitle("View Reports");
+
+    VBox reportsLayout = new VBox();
+    reportsLayout.setAlignment(Pos.CENTER);
+    reportsLayout.setSpacing(20);
+
+    Label selectStudentLabel = new Label("Select a student:");
+    ComboBox<String> studentComboBox = new ComboBox<>();
+    
+    //Populate the ComboBox with student names from the database
+    populateStudentComboBox(studentComboBox);
+
+    Button viewReportButton = createStyledButton("View Report");
+
+    reportsLayout.getChildren().addAll(selectStudentLabel, studentComboBox, viewReportButton, createExitButton(reportsStage));
+
+    viewReportButton.setOnAction(e -> {
+        String selectedStudent = studentComboBox.getValue();
+        
+        showStudentReportScreen(selectedStudent);
+    });
+
+    Scene reportsScene = new Scene(reportsLayout, 400, 300);
+    reportsStage.setScene(reportsScene);
+    reportsStage.show();
+}
+
+private void populateStudentComboBox(ComboBox<String> studentComboBox) {
+    // Retrieve the list of student names from the database and add them to the ComboBox
+    try (Connection connection = DriverManager.getConnection(dbUrl, dbUser, dbPassword)) {
+        String query = "SELECT username FROM Students";
+        try (PreparedStatement preparedStatement = connection.prepareStatement(query);
+             ResultSet resultSet = preparedStatement.executeQuery()) {
+            while (resultSet.next()) {
+                String studentName = resultSet.getString("username");
+                studentComboBox.getItems().add(studentName);
+            }
+        }
+    } catch (SQLException e) {
+        e.printStackTrace();
+        showAlert("Database Error", "An error occurred while fetching student names");
+    }
+}
+
+private void showStudentReportScreen(String studentUsername) {
+   
+
+    Stage reportStage = new Stage();
+    reportStage.setTitle("Student Report");
+
+  
+
+    VBox reportLayout = new VBox();
+    reportLayout.setAlignment(Pos.CENTER);
+    reportLayout.setSpacing(20);
+
+    Label reportLabel = new Label("Report for " + studentUsername);
+    reportLabel.setStyle("-fx-font-size: 18px; -fx-font-weight: bold;");
+
+    
+
+    reportLayout.getChildren().addAll(reportLabel, createExitButton(reportStage));
+
+    Scene reportScene = new Scene(reportLayout, 400, 300);
+    reportStage.setScene(reportScene);
+    reportStage.show();
+}
+
+
+private void showStudentReportScreen() {
+
+    showStudentReportScreen("Student"); 
+}
+
+
+
+
+    
+}
